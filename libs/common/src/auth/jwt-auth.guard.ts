@@ -17,6 +17,7 @@ export class JwtAuthGuard implements CanActivate {
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
     const authentication = this.getAuthentication(context);
+
     return this.authClient
       .send('validate_user', {
         Authentication: authentication,
@@ -36,8 +37,9 @@ export class JwtAuthGuard implements CanActivate {
     if (context.getType() === 'rpc') {
       authentication = context.switchToRpc().getData().Authentication;
     } else if (context.getType() === 'http') {
-      authentication = context.switchToHttp().getRequest().cookies
-        ?.Authentication;
+      authentication = this.extractTokenFromHeader(
+        context.switchToHttp().getRequest(),
+      );
     }
     if (!authentication) {
       throw new UnauthorizedException(
@@ -45,6 +47,12 @@ export class JwtAuthGuard implements CanActivate {
       );
     }
     return authentication;
+  }
+
+  private extractTokenFromHeader(request: Request): string | undefined {
+    const [type, token] =
+      (request.headers['x-access-token'] as string)?.split(' ') ?? [];
+    return type === 'Bearer' ? token : undefined;
   }
 
   private addUser(user: any, context: ExecutionContext) {

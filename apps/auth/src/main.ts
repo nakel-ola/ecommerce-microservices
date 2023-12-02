@@ -10,8 +10,12 @@ async function bootstrap() {
   const rmqService = app.get<RmqService>(RmqService);
   app.connectMicroservice<RmqOptions>(rmqService.getOptions('AUTH', true));
   app.useGlobalPipes(new ValidationPipe());
+
   const configService = app.get(ConfigService);
+  const PORT = configService.get('PORT');
   await app.startAllMicroservices();
-  await app.listen(configService.get('PORT'));
+  await app.listen(PORT, () => {
+    console.log(`🚀 Server ready at http://localhost:${PORT}/`);
+  });
 }
 bootstrap();
